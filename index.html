@@ -1,304 +1,1095 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>DevGeek.IT Overlay</title>
+  <meta charset="UTF-8">
+  <title>DevGeek.IT - Реклама подписок</title>
+  <style>
+    /* Общие стили */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 2560px;
+      height: 1440px;
+      background: transparent;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #ffffff;
+    }
 
-<style>
-html,body{
-margin:0;
-padding:0;
-width:2560px;
-height:1440px;
-overflow:hidden;
-background:black;
-font-family:Segoe UI,Arial;
-}
+    /* Canvas для анимации частиц */
+    #particles-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
 
-canvas{
-position:fixed;
-top:0;
-left:0;
-width:2560px;
-height:1440px;
-z-index:0;
-background:black;
-}
+    /* Основной контейнер для контента */
+    .content-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
 
-.overlay{
-position:absolute;
-top:0;
-left:0;
-width:2560px;
-height:1440px;
-z-index:5;
-pointer-events:none;
-}
+    /* Левый верхний блок */
+    .top-left {
+      position: absolute;
+      top: 20px;
+      left: 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 26px;
+      z-index: 10;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+      padding: 12px 25px;
+      border-radius: 50px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 
+        0 4px 20px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.1);
+    }
 
-/* ===== Цвет под фон ===== */
-:root{
---neon:#4cf0ff;
-}
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-/* ===== LIVE ===== */
+    .live-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff3333, #ff6666);
+      box-shadow: 0 0 15px rgba(255,0,0,0.6);
+      animation: pulse 1.2s infinite;
+    }
 
-.live-box{
-position:absolute;
-top:40px;
-left:40px;
-display:flex;
-align-items:center;
-gap:14px;
-padding:12px 22px;
-border:2px dashed var(--neon);
-border-radius:14px;
-color:var(--neon);
-font-size:34px;
-font-weight:600;
-}
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
+    }
 
-.dot{
-width:14px;
-height:14px;
-background:red;
-border-radius:50%;
-animation:pulse 1s infinite;
-}
+    .nickname {
+      font-weight: 800;
+      letter-spacing: 1px;
+      background: linear-gradient(45deg, #ffffff, #e0e0e0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 2px 10px rgba(255,255,255,0.2);
+    }
 
-@keyframes pulse{
-0%{transform:scale(1)}
-50%{transform:scale(1.4);opacity:.6}
-100%{transform:scale(1)}
-}
+    .stream-timer {
+      font-size: 22px;
+      font-weight: 600;
+      color: #cccccc;
+      padding-left: 16px;
+      border-left: 2px solid rgba(255,255,255,0.2);
+    }
 
-/* ===== Часы ===== */
+    /* Правый верхний блок */
+    .top-right {
+      position: absolute;
+      top: 20px;
+      right: 40px;
+      text-align: right;
+      font-size: 22px;
+      z-index: 10;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+      padding: 12px 25px;
+      border-radius: 50px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 
+        0 4px 20px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.1);
+    }
 
-.clock{
-position:absolute;
-top:40px;
-right:40px;
-padding:12px 22px;
-border:2px dashed var(--neon);
-border-radius:14px;
-color:var(--neon);
-font-size:34px;
-font-family:monospace;
-}
+    #timeNow {
+      font-weight: 700;
+      background: linear-gradient(45deg, #ffffff, #e0e0e0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 4px;
+    }
 
-/* ===== POPUP ===== */
+    #dateNow {
+      font-weight: 600;
+      color: #cccccc;
+      font-size: 20px;
+    }
 
-.popup{
-position:absolute;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%) scale(0);
-opacity:0;
-background:rgba(0,0,0,.85);
-padding:40px 60px;
-border-radius:18px;
-font-size:32px;
-color:white;
-text-align:center;
-transition:1s ease;
-z-index:20;
-pointer-events:auto;
-}
+    /* Базовые стили рекламных окон */
+    .subscription-popup {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 800px;
+      padding: 35px 45px;
+      border-radius: 25px;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 100;
+      transform: translate(-50%, -50%) scale(0.85);
+      transition: transform 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.7s ease;
+      background: linear-gradient(145deg, rgba(0,0,0,0.85) 0%, rgba(30,30,40,0.85) 100%);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 
+        0 20px 60px rgba(0,0,0,0.7),
+        0 0 0 1px rgba(255,255,255,0.08),
+        inset 0 1px 0 rgba(255,255,255,0.15);
+    }
 
-.popup a{
-color:var(--neon);
-text-decoration:none;
-font-weight:bold;
-}
+    .subscription-popup.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
 
-/* ===== FINGER ===== */
+    /* Иконка уровня */
+    .level-icon {
+      font-size: 52px;
+      margin-bottom: 15px;
+      animation: float 3s ease-in-out infinite;
+      filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5));
+    }
 
-.finger{
-position:absolute;
-top:calc(50% + 160px);
-left:50%;
-transform:translateX(-50%);
-font-size:96px;
-opacity:0;
-animation:finger 1.5s infinite;
-transition:1s ease;
-filter:drop-shadow(0 0 12px rgba(76,240,255,.8));
-z-index:21;
-}
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-12px) rotate(5deg); }
+    }
 
-@keyframes finger{
-0%{transform:translate(-50%,0)}
-50%{transform:translate(-50%,28px)}
-100%{transform:translate(-50%,0)}
-}
+    /* Заголовок уровня */
+    .level-title {
+      font-size: 38px;
+      font-weight: 900;
+      margin-bottom: 18px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding-bottom: 12px;
+      position: relative;
+    }
 
-</style>
+    .level-title:after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 25%;
+      width: 50%;
+      height: 3px;
+      border-radius: 3px;
+      opacity: 0.8;
+    }
+
+    /* Подзаголовок */
+    .level-subtitle {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 25px;
+      padding: 10px 20px;
+      border-radius: 15px;
+      display: inline-block;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      backdrop-filter: blur(5px);
+    }
+
+    /* Список бонусов */
+    .bonuses {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin: 30px 0;
+      text-align: left;
+      padding: 0 40px;
+    }
+
+    .bonus-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 21px;
+      padding: 12px 20px;
+      border-radius: 15px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(5px);
+    }
+
+    .bonus-item:hover {
+      background: linear-gradient(90deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 100%);
+      transform: translateX(8px);
+      border-color: rgba(255,255,255,0.2);
+    }
+
+    .bonus-icon {
+      font-size: 28px;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    /* Кнопка CTA */
+    .cta-button {
+      display: inline-block;
+      padding: 18px 40px;
+      border-radius: 60px;
+      font-size: 24px;
+      font-weight: 800;
+      text-decoration: none;
+      margin-top: 20px;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(45deg, var(--btn-color-1), var(--btn-color-2));
+      color: var(--btn-text-color);
+      box-shadow: 0 10px 30px var(--btn-shadow-color);
+    }
+
+    .cta-button:hover {
+      transform: translateY(-5px) scale(1.05);
+      box-shadow: 0 15px 40px var(--btn-shadow-color-hover);
+    }
+
+    /* Специфичные стили для уровней */
+    .level-1 {
+      --btn-color-1: #00b894;
+      --btn-color-2: #00ffcc;
+      --btn-text-color: #003322;
+      --btn-shadow-color: rgba(0, 184, 148, 0.4);
+      --btn-shadow-color-hover: rgba(0, 184, 148, 0.6);
+      --title-gradient: linear-gradient(45deg, #00b894, #00ffcc, #00b894);
+      --border-color: rgba(0, 184, 148, 0.3);
+    }
+
+    .level-2 {
+      --btn-color-1: #0984e3;
+      --btn-color-2: #74b9ff;
+      --btn-text-color: #001933;
+      --btn-shadow-color: rgba(9, 132, 227, 0.4);
+      --btn-shadow-color-hover: rgba(9, 132, 227, 0.6);
+      --title-gradient: linear-gradient(45deg, #0984e3, #74b9ff, #0984e3);
+      --border-color: rgba(9, 132, 227, 0.3);
+    }
+
+    .level-3 {
+      --btn-color-1: #fd79a8;
+      --btn-color-2: #e84393;
+      --btn-text-color: #33001a;
+      --btn-shadow-color: rgba(253, 121, 168, 0.4);
+      --btn-shadow-color-hover: rgba(253, 121, 168, 0.6);
+      --title-gradient: linear-gradient(45deg, #fd79a8, #e84393, #fd79a8);
+      --border-color: rgba(253, 121, 168, 0.3);
+    }
+
+    .telegram-popup {
+      --btn-color-1: #0088cc;
+      --btn-color-2: #00aced;
+      --btn-text-color: #ffffff;
+      --btn-shadow-color: rgba(0, 136, 204, 0.4);
+      --btn-shadow-color-hover: rgba(0, 136, 204, 0.6);
+      --title-gradient: linear-gradient(45deg, #0088cc, #00aced, #0088cc);
+      --border-color: rgba(0, 136, 204, 0.3);
+      width: 850px;
+    }
+
+    /* Применение цветовых переменных */
+    .level-1, .level-2, .level-3, .telegram-popup {
+      border: 2px solid var(--border-color);
+    }
+
+    .level-1 .level-title, 
+    .level-2 .level-title, 
+    .level-3 .level-title,
+    .telegram-popup .level-title {
+      background: var(--title-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      background-size: 200% 100%;
+      animation: gradient 3s ease infinite;
+    }
+
+    .level-1 .level-title:after,
+    .level-2 .level-title:after,
+    .level-3 .level-title:after,
+    .telegram-popup .level-title:after {
+      background: linear-gradient(90deg, var(--btn-color-1), var(--btn-color-2));
+    }
+
+    /* Анимация для Telegram-иконки */
+    .telegram-icon {
+      animation: telegram-pulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes telegram-pulse {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      25% { transform: scale(1.1) rotate(5deg); }
+      75% { transform: scale(1.1) rotate(-5deg); }
+    }
+
+    @keyframes gradient {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    /* VIP-свечение */
+    .level-3 {
+      animation: vip-glow 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes vip-glow {
+      from {
+        box-shadow: 
+          0 20px 60px rgba(0,0,0,0.7),
+          0 0 0 1px rgba(255,255,255,0.08),
+          0 0 40px var(--border-color),
+          inset 0 1px 0 rgba(255,255,255,0.15);
+      }
+      to {
+        box-shadow: 
+          0 20px 60px rgba(0,0,0,0.7),
+          0 0 0 1px rgba(255,255,255,0.08),
+          0 0 60px var(--border-color),
+          inset 0 1px 0 rgba(255,255,255,0.15);
+      }
+    }
+
+    /* Прогресс-бар */
+    .progress-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 85%;
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(5px);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 100%;
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform linear;
+      border-radius: 10px;
+      background: linear-gradient(90deg, var(--btn-color-1), var(--btn-color-2), var(--btn-color-1));
+      background-size: 200% 100%;
+      animation: gradient 3s ease infinite;
+    }
+
+    /* Счетчик рекламы */
+    .ad-counter {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 16px;
+      font-weight: 600;
+      background: rgba(255,255,255,0.15);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.15);
+      backdrop-filter: blur(5px);
+    }
+  </style>
 </head>
-
 <body>
 
-<canvas id="canvas"></canvas>
+  <!-- Canvas для анимации частиц -->
+  <canvas id="particles-canvas"></canvas>
 
-<div class="overlay">
+  <!-- Основной контейнер контента -->
+  <div class="content-container">
+    <!-- Левый верх -->
+    <div class="top-left">
+      <div class="live-indicator">
+        <div class="live-dot"></div>
+        <div>LIVE</div>
+      </div>
+      <div class="nickname">DevGeek.IT</div>
+      <div class="stream-timer" id="streamTimer">00:00:00</div>
+    </div>
 
-<div class="live-box">
-<div class="dot"></div>
-LIVE DevGeek.IT —
-<span id="streamTime">00:00:00</span>
-</div>
+    <!-- Правый верх -->
+    <div class="top-right">
+      <div id="timeNow">00:00:00</div>
+      <div id="dateNow">00.00.0000</div>
+    </div>
 
-<div class="clock" id="clock"></div>
+    <!-- Рекламные окна подписок -->
+    <div class="subscription-popup level-1" id="popupLevel1">
+      <div class="level-icon">🎮</div>
+      <div class="level-title">1-й уровень подписки — "Базовый"</div>
+      <div class="level-subtitle">🔥 "Подпишись и получи мгновенную награду!"</div>
+      
+      <div class="bonuses">
+        <div class="bonus-item">
+          <span class="bonus-icon">💰</span>
+          <span>1000 золота (для прокачки техники)</span>
+        </div>
+        <div class="bonus-item">
+          <span class="bonus-icon">🎁</span>
+          <span>Эксклюзивный чат-доступ</span>
+        </div>
+        <div class="bonus-item">
+          <span class="bonus-icon">✨</span>
+          <span>Спец-стикеры "Танкист"</span>
+        </div>
+      </div>
 
-<div class="popup" id="popup">
-Подписывайся на Telegram  
-<br>
-<a href="https://t.me/+dut0qXEQ_PBmZTli" target="_blank">
-DevGeek.IT
-</a>
-</div>
+      <div class="level-subtitle">"Стань частью экипажа — поддержи канал и забери золото!"</div>
+      
+      <button class="cta-button" data-action="subscribe" data-level="1">
+        Подписаться сейчас!
+      </button>
+      
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressLevel1"></div>
+      </div>
+      <div class="ad-counter">1/4</div>
+    </div>
 
-<div class="finger" id="finger">👇</div>
+    <div class="subscription-popup level-2" id="popupLevel2">
+      <div class="level-icon">🎖️</div>
+      <div class="level-title">2-й уровень подписки — "Продвинутый"</div>
+      <div class="level-subtitle">🔥 "Усиленная подписка — больше выгоды!"</div>
+      
+      <div class="bonuses">
+        <div class="bonus-item">
+          <span class="bonus-icon">🚀</span>
+          <span>2500 золота (в 2.5 раза больше!)</span>
+        </div>
+        <div class="bonus-item">
+          <span class="bonus-icon">💎</span>
+          <span>Ранний доступ к стримам</span>
+        </div>
+        <div class="bonus-item">
+          <span class="bonus-icon">🎯</span>
+          <span>Именная роль в чате</span>
+        </div>
+        <div class="bonus-item">
+          <span class="bonus-icon">🛡️</span>
+          <span>Бонус: 2 эксклюзивных эмодзи</span>
+        </div>
+      </div>
 
-</div>
+      <div class="level-subtitle">"Золото + статус — твоя премиум-поддержка работает на тебя!"</div>
+      
+      <button class="cta-button" data-action="subscribe" data-level="2">
+        Апгрейдить подписку!
+      </button>
+      
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressLevel2"></div>
+      </div>
+      <div class="ad-counter">2/4</div>
+    </div>
 
-<script>
-/* ================= ЧАСЫ ================= */
+    <div class="subscription-popup level-3" id="popupLevel3">
+      <div class="level-icon">👑</div>
+      <div class="level-title">3-й уровень подписки — "VIP"</div>
+      <div class="level-subtitle">💎 "Максимум привилегий — королевский пакет!"</div>
+      
+      <div class="bonuses">
+        <div class="bonus-item">
+          <span class="bonus-icon">🏆</span>
+          <span>4500 золота (огненный запас для боёв!)</span>
+        </div>
+        <div class="bonus-item">
+          <span class="bonus-icon">👑</span>
+          <span>VIP-значок в чате</span>
+        </div>
+        <div class="bonus-item">
+          <span class="bonus-icon">🎁</span>
+          <span>Персональный благодарственный шут в стриме</span>
+        </div>
+        <div class="bonus-item">
+          <span class="bonus-icon">🚜</span>
+          <span>Доступ к закрытым голосованиям</span>
+        </div>
+      </div>
 
-function clock(){
-const d=new Date();
-const t=[
-d.getHours(),
-d.getMinutes(),
-d.getSeconds()
-].map(x=>String(x).padStart(2,"0")).join(":");
+      <div class="level-subtitle">"Ты не просто зритель — ты легенда нашего танкового комьюнити!"</div>
+      
+      <button class="cta-button" data-action="subscribe" data-level="3">
+        Стать VIP Легендой!
+      </button>
+      
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressLevel3"></div>
+      </div>
+      <div class="ad-counter">3/4</div>
+    </div>
 
-const date=[
-d.getDate(),
-d.getMonth()+1,
-d.getFullYear()
-].map(x=>String(x).padStart(2,"0")).join(".");
+    <!-- Telegram-реклама -->
+    <div class="subscription-popup telegram-popup" id="popupTelegram">
+      <div class="level-icon telegram-icon">📢</div>
+      <div class="level-title">Telegram-канал DevGeek.IT</div>
+      <div class="level-subtitle">© DevGeek.IT, 2026</div>
+      
+      <div class="bonuses">
+        <div class="bonus-item">
+          <span class="bonus-icon">🔹</span>
+          <span>Безопасность и цифровая грамотность простым языком</span>
+        </div>
+        <div class="bonus-item">
+          <span class="bonus-icon">🔹</span>
+          <span>Практические инструкции для Windows, Linux и смартфонов</span>
+        </div>
+        <div class="bonus-item">
+          <span class="bonus-icon">🔹</span>
+          <span>Разбор важных ИТ‑новостей и угроз, которые касаются каждого</span>
+        </div>
+      </div>
 
-document.getElementById("clock").innerText=t+" "+date;
-}
-setInterval(clock,1000);
-clock();
+      <div class="level-subtitle">"Подпишись и будь в курсе всего самого важного в мире технологий!"</div>
+      
+      <button class="cta-button" data-action="telegram">
+        Открыть Telegram-канал
+      </button>
+      
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressTelegram"></div>
+      </div>
+      <div class="ad-counter">4/4</div>
+    </div>
+  </div>
 
-/* ================= TIMER ================= */
+  <script>
+    // ============================================
+    // СИСТЕМА ЧАСТИЦ ДЛЯ ФОНА
+    // ============================================
+    const particlesCanvas = document.getElementById("particles-canvas");
+    const particlesCtx = particlesCanvas.getContext("2d");
 
-const start=Date.now();
+    const particles = [];
+    const fireworkParticles = [];
+    const dustParticles = [];
+    const ripples = [];
+    const techRipples = [];
 
-function streamTimer(){
-let s=Math.floor((Date.now()-start)/1000);
-const h=String(Math.floor(s/3600)).padStart(2,"0");
-s%=3600;
-const m=String(Math.floor(s/60)).padStart(2,"0");
-const sec=String(s%60).padStart(2,"0");
+    const mouse = (() => {
+      let state = { x: null, y: null };
+      return {
+        get x() { return state.x; },
+        get y() { return state.y; },
+        set({ x, y }) { state = { x, y }; },
+        reset() { state = { x: null, y: null }; }
+      };
+    })();
 
-document.getElementById("streamTime").innerText=
-`${h}:${m}:${sec}`;
-}
-setInterval(streamTimer,1000);
+    let backgroundHue = 0;
+    let frameCount = 0;
+    let autoDrift = true;
 
-/* ================= POPUP ================= */
+    function adjustParticleCount() {
+      const particleConfig = {
+        heightConditions: [200, 300, 400, 500, 600],
+        widthConditions: [450, 600, 900, 1200, 1600],
+        particlesForHeight: [40, 60, 70, 90, 110],
+        particlesForWidth: [40, 50, 70, 90, 110]
+      };
 
-function showPopup(){
-const p=document.getElementById("popup");
-const f=document.getElementById("finger");
+      let numParticles = 130;
 
-p.style.display="block";
+      for (let i = 0; i < particleConfig.heightConditions.length; i++) {
+        if (particlesCanvas.height < particleConfig.heightConditions[i]) {
+          numParticles = particleConfig.particlesForHeight[i];
+          break;
+        }
+      }
 
-setTimeout(()=>{
-p.style.transform="translate(-50%,-50%) scale(1)";
-p.style.opacity="1";
-f.style.opacity="1";
-},50);
+      for (let i = 0; i < particleConfig.widthConditions.length; i++) {
+        if (particlesCanvas.width < particleConfig.widthConditions[i]) {
+          numParticles = Math.min(numParticles, particleConfig.particlesForWidth[i]);
+          break;
+        }
+      }
 
-setTimeout(()=>{
-p.style.transform="translate(-50%,-50%) scale(.5)";
-p.style.opacity="0";
-f.style.opacity="0";
-},30000);
+      return numParticles;
+    }
 
-setTimeout(()=>{
-p.style.display="none";
-},31000);
-}
+    class Particle {
+      constructor(x, y, isFirework = false) {
+        const baseSpeed = isFirework
+          ? Math.random() * 2 + 1
+          : Math.random() * 0.5 + 0.3;
+        Object.assign(this, {
+          isFirework,
+          x,
+          y,
+          vx: Math.cos(Math.random() * Math.PI * 2) * baseSpeed,
+          vy: Math.sin(Math.random() * Math.PI * 2) * baseSpeed,
+          size: isFirework ? Math.random() * 2 + 2 : Math.random() * 3 + 1,
+          hue: Math.random() * 360,
+          alpha: 1,
+          sizeDirection: Math.random() < 0.5 ? -1 : 1,
+          trail: []
+        });
+      }
+      update(mouse) {
+        const dist = mouse.x !== null ? (mouse.x - this.x) ** 2 + (mouse.y - this.y) ** 2 : 0;
 
-setTimeout(showPopup,12000);
+        if (!this.isFirework) {
+          const force = dist && dist < 22500 ? (22500 - dist) / 22500 : 0;
 
-/* ================= ФОН ЧАСТИЦ ================= */
+          if (mouse.x === null && autoDrift) {
+            this.vx += (Math.random() - 0.5) * 0.03;
+            this.vy += (Math.random() - 0.5) * 0.03;
+          }
 
-const canvas=document.getElementById("canvas");
-const ctx=canvas.getContext("2d");
+          if (dist) {
+            const sqrtDist = Math.sqrt(dist);
+            this.vx += ((mouse.x - this.x) / sqrtDist) * force * 0.1;
+            this.vy += ((mouse.y - this.y) / sqrtDist) * force * 0.1;
+          }
 
-canvas.width=2560;
-canvas.height=1440;
+          this.vx *= mouse.x !== null ? 0.99 : 0.998;
+          this.vy *= mouse.y !== null ? 0.99 : 0.998;
+        } else {
+          this.alpha -= 0.02;
+        }
 
-const particles=[];
+        this.x += this.vx;
+        this.y += this.vy;
 
-for(let i=0;i<160;i++){
-particles.push({
-x:Math.random()*canvas.width,
-y:Math.random()*canvas.height,
-vx:(Math.random()-.5)*.6,
-vy:(Math.random()-.5)*.6,
-r:Math.random()*3+1,
-h:Math.random()*360
-});
-}
+        if (this.x <= 0 || this.x >= particlesCanvas.width - 1) this.vx *= -0.9;
+        if (this.y < 0 || this.y > particlesCanvas.height) this.vy *= -0.9;
 
-function bg(){
-ctx.fillStyle="black";
-ctx.fillRect(0,0,canvas.width,canvas.height);
+        this.size += this.sizeDirection * 0.1;
+        if (this.size > 4 || this.size < 1) this.sizeDirection *= -1;
 
-particles.forEach(p=>{
-p.x+=p.vx;
-p.y+=p.vy;
+        this.hue = (this.hue + 0.3) % 360;
 
-if(p.x<0||p.x>canvas.width)p.vx*=-1;
-if(p.y<0||p.y>canvas.height)p.vy*=-1;
+        if (frameCount % 2 === 0 && (Math.abs(this.vx) > 0.1 || Math.abs(this.vy) > 0.1)) {
+          this.trail.push({ x: this.x, y: this.y, hue: this.hue, alpha: this.alpha });
+          if (this.trail.length > 15) this.trail.shift();
+        }
+      }
+      draw(ctx) {
+        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+        gradient.addColorStop(0, `hsla(${this.hue}, 80%, 60%, ${Math.max(this.alpha, 0.4)})`);
+        gradient.addColorStop(1, `hsla(${this.hue + 30}, 80%, 30%, ${Math.max(this.alpha, 0.2)})`);
+        ctx.fillStyle = gradient;
+        ctx.shadowBlur = particlesCanvas.width > 900 ? 10 : 0;
+        ctx.shadowColor = `hsl(${this.hue}, 80%, 60%)`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
 
-p.h=(p.h+.4)%360;
+        if (this.trail.length > 1) {
+          ctx.beginPath();
+          ctx.lineWidth = 1.5;
+          for (let i = 0; i < this.trail.length - 1; i++) {
+            const { x: x1, y: y1, hue: h1, alpha: a1 } = this.trail[i];
+            const { x: x2, y: y2 } = this.trail[i + 1];
+            ctx.strokeStyle = `hsla(${h1}, 80%, 60%, ${Math.max(a1, 0.3)})`;
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+          }
+          ctx.stroke();
+        }
+      }
+      isDead() {
+        return this.isFirework && this.alpha <= 0;
+      }
+    }
 
-const g=ctx.createRadialGradient(
-p.x,p.y,0,p.x,p.y,p.r*2
-);
+    class DustParticle {
+      constructor() {
+        Object.assign(this, {
+          x: Math.random() * particlesCanvas.width,
+          y: Math.random() * particlesCanvas.height,
+          size: Math.random() * 1.5 + 0.5,
+          hue: Math.random() * 360,
+          vx: (Math.random() - 0.5) * 0.05,
+          vy: (Math.random() - 0.5) * 0.05
+        });
+      }
+      update() {
+        this.x = (this.x + this.vx + particlesCanvas.width) % particlesCanvas.width;
+        this.y = (this.y + this.vy + particlesCanvas.height) % particlesCanvas.height;
+        this.hue = (this.hue + 0.1) % 360;
+      }
+      draw(ctx) {
+        ctx.fillStyle = `hsla(${this.hue}, 30%, 70%, 0.3)`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
 
-g.addColorStop(0,`hsla(${p.h},80%,60%,1)`);
-g.addColorStop(1,`hsla(${p.h+30},80%,30%,0)`);
+    class Ripple {
+      constructor(x, y, hue = 0, maxRadius = 30) {
+        Object.assign(this, { x, y, radius: 0, maxRadius, alpha: 0.5, hue });
+      }
+      update() {
+        this.radius += 1.5;
+        this.alpha -= 0.01;
+        this.hue = (this.hue + 5) % 360;
+      }
+      draw(ctx) {
+        ctx.strokeStyle = `hsla(${this.hue}, 80%, 60%, ${this.alpha})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      isDone() {
+        return this.alpha <= 0;
+      }
+    }
 
-ctx.fillStyle=g;
-ctx.beginPath();
-ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-ctx.fill();
-});
+    function createParticles() {
+      particles.length = 0;
+      dustParticles.length = 0;
 
-/* линии */
+      const numParticles = adjustParticleCount();
+      for (let i = 0; i < numParticles; i++) {
+        particles.push(new Particle(Math.random() * particlesCanvas.width, Math.random() * particlesCanvas.height));
+      }
+      for (let i = 0; i < 200; i++) {
+        dustParticles.push(new DustParticle());
+      }
+    }
 
-for(let i=0;i<particles.length;i++){
-for(let j=i+1;j<particles.length;j++){
-const a=particles[i];
-const b=particles[j];
+    function resizeParticlesCanvas() {
+      particlesCanvas.width = 2560;
+      particlesCanvas.height = 1440;
+      createParticles();
+    }
 
-const dx=a.x-b.x;
-const dy=a.y-b.y;
-const d=Math.sqrt(dx*dx+dy*dy);
+    function drawParticlesBackground() {
+      backgroundHue = (backgroundHue + 0.2) % 360;
+      const gradient = particlesCtx.createLinearGradient(0, 0, 0, particlesCanvas.height);
+      gradient.addColorStop(0, `hsla(${backgroundHue}, 40%, 8%, 0.9)`);
+      gradient.addColorStop(1, `hsla(${(backgroundHue + 120) % 360}, 40%, 12%, 0.9)`);
+      particlesCtx.fillStyle = gradient;
+      particlesCtx.fillRect(0, 0, particlesCanvas.width, particlesCanvas.height);
+    }
 
-if(d<140){
-ctx.strokeStyle=`rgba(76,240,255,${1-d/140})`;
-ctx.lineWidth=1;
-ctx.beginPath();
-ctx.moveTo(a.x,a.y);
-ctx.lineTo(b.x,b.y);
-ctx.stroke();
-}
-}
-}
+    function connectParticles() {
+      const gridSize = 120;
+      const grid = new Map();
 
-requestAnimationFrame(bg);
-}
+      particles.forEach((p) => {
+        const key = `${Math.floor(p.x / gridSize)},${Math.floor(p.y / gridSize)}`;
+        if (!grid.has(key)) grid.set(key, []);
+        grid.get(key).push(p);
+      });
 
-bg();
-</script>
+      particlesCtx.lineWidth = 1.5;
+      particles.forEach((p) => {
+        const gridX = Math.floor(p.x / gridSize);
+        const gridY = Math.floor(p.y / gridSize);
 
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            const key = `${gridX + dx},${gridY + dy}`;
+            if (grid.has(key)) {
+              grid.get(key).forEach((neighbor) => {
+                if (neighbor !== p) {
+                  const diffX = neighbor.x - p.x;
+                  const diffY = neighbor.y - p.y;
+                  const dist = diffX * diffX + diffY * diffY;
+                  if (dist < 10000) {
+                    particlesCtx.strokeStyle = `hsla(${(p.hue + neighbor.hue) / 2}, 80%, 60%, ${0.4 - Math.sqrt(dist) / 250})`;
+                    particlesCtx.beginPath();
+                    particlesCtx.moveTo(p.x, p.y);
+                    particlesCtx.lineTo(neighbor.x, neighbor.y);
+                    particlesCtx.stroke();
+                  }
+                }
+              });
+            }
+          }
+        }
+      });
+    }
+
+    function animateParticles() {
+      drawParticlesBackground();
+
+      [dustParticles, particles, ripples, techRipples, fireworkParticles].forEach((arr) => {
+        for (let i = arr.length - 1; i >= 0; i--) {
+          const obj = arr[i];
+          obj.update(mouse);
+          obj.draw(particlesCtx);
+          if (obj.isDone?.() || obj.isDead?.()) arr.splice(i, 1);
+        }
+      });
+
+      connectParticles();
+      frameCount++;
+      requestAnimationFrame(animateParticles);
+    }
+
+    // Обработчики для частиц
+    particlesCanvas.addEventListener("mousemove", (e) => {
+      const rect = particlesCanvas.getBoundingClientRect();
+      mouse.set({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      techRipples.push(new Ripple(mouse.x, mouse.y));
+      autoDrift = false;
+    });
+
+    particlesCanvas.addEventListener("mouseleave", () => {
+      mouse.reset();
+      autoDrift = true;
+    });
+
+    particlesCanvas.addEventListener("click", (e) => {
+      const rect = particlesCanvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      ripples.push(new Ripple(clickX, clickY, 0, 60));
+
+      for (let i = 0; i < 15; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 2 + 1;
+        const particle = new Particle(clickX, clickY, true);
+        particle.vx = Math.cos(angle) * speed;
+        particle.vy = Math.sin(angle) * speed;
+        fireworkParticles.push(particle);
+      }
+    });
+
+    // ============================================
+    // СИСТЕМА РЕКЛАМНОГО ОВЕРЛЕЯ
+    // ============================================
+    const CONFIG = {
+      ads: {
+        initialDelay: 10,
+        adDuration: 25,
+        telegramDuration: 15,
+        pauseBetweenAds: 5,
+        cycleInterval: 10
+      },
+      
+      links: {
+        trovo: {
+          level1: 'aHR0cHM6Ly90cm92by5saXZlL3MvRGV2R2Vla0lU',
+          level2: 'aHR0cHM6Ly90cm92by5saXZlL3MvRGV2R2Vla0lU',
+          level3: 'aHR0cHM6Ly90cm92by5saXZlL3MvRGV2R2Vla0lU'
+        },
+        telegram: {
+          parts: [
+            'aHR0cHM6Ly',
+            '90Lm1lLys',
+            'kZXQwcVhF',
+            'UV9QQm1aV',
+            'Gxp'
+          ]
+        }
+      }
+    };
+
+    const LinkProtector = {
+      decodeBase64: (encoded) => {
+        try {
+          return atob(encoded);
+        } catch (error) {
+          console.error('Ошибка декодирования ссылки:', error);
+          return '#';
+        }
+      },
+
+      assembleLink: (parts) => {
+        return this.decodeBase64(parts.join(''));
+      },
+
+      openProtectedLink: (url, target = '_blank') => {
+        if (!url || url === '#' || url.includes('javascript:')) {
+          console.warn('Некорректная ссылка');
+          return;
+        }
+        
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+          window.open(url, target);
+        }
+      },
+
+      getSubscriptionLink: (level) => {
+        const key = `level${level}`;
+        if (CONFIG.links.trovo[key]) {
+          return this.decodeBase64(CONFIG.links.trovo[key]);
+        }
+        return '#';
+      },
+
+      getTelegramLink: () => {
+        return this.assembleLink(CONFIG.links.telegram.parts);
+      }
+    };
+
+    class StreamOverlay {
+      constructor() {
+        this.currentAdIndex = 0;
+        this.isAdShowing = false;
+        this.streamStart = new Date();
+        
+        this.popups = [
+          { 
+            element: document.getElementById('popupLevel1'), 
+            progress: document.getElementById('progressLevel1'), 
+            duration: CONFIG.ads.adDuration 
+          },
+          { 
+            element: document.getElementById('popupLevel2'), 
+            progress: document.getElementById('progressLevel2'), 
+            duration: CONFIG.ads.adDuration 
+          },
+          { 
+            element: document.getElementById('popupLevel3'), 
+            progress: document.getElementById('progressLevel3'), 
+            duration: CONFIG.ads.adDuration 
+          },
+          { 
+            element: document.getElementById('popupTelegram'), 
+            progress: document.getElementById('progressTelegram'), 
+            duration: CONFIG.ads.telegramDuration 
+          }
+        ];
+      }
+
+      init() {
+        this.updateStreamTimer();
+        this.updateDateTime();
+        this.setupEventListeners();
+        
+        setInterval(() => this.updateStreamTimer(), 1000);
+        setInterval(() => this.updateDateTime(), 1000);
+        
+        setTimeout(() => {
+          this.showAd(this.currentAdIndex);
+        }, CONFIG.ads.initialDelay * 1000);
+        
+        console.log('✨ Стильный рекламный оверлей с анимацией частиц запущен!');
+      }
+
+      updateStreamTimer() {
+        const now = new Date();
+        let diff = Math.floor((now - this.streamStart) / 1000);
+        const h = String(Math.floor(diff / 3600)).padStart(2, "0");
+        diff %= 3600;
+        const m = String(Math.floor(diff / 60)).padStart(2, "0");
+        const s = String(diff % 60).padStart(2, "0");
+        document.getElementById("streamTimer").textContent = `${h}:${m}:${s}`;
+      }
+
+      updateDateTime() {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, "0");
+        const mm = String(now.getMinutes()).padStart(2, "0");
+        const ss = String(now.getSeconds()).padStart(2, "0");
+        const dd = String(now.getDate()).padStart(2, "0");
+        const mo = String(now.getMonth() + 1).padStart(2, "0");
+        const yy = String(now.getFullYear());
+        document.getElementById("timeNow").textContent = `${hh}:${mm}:${ss}`;
+        document.getElementById("dateNow").textContent = `${dd}.${mo}.${yy}`;
+      }
+
+      showAd(index) {
+        if (this.isAdShowing || index >= this.popups.length) return;
+        
+        this.isAdShowing = true;
+        const ad = this.popups[index];
+        
+        this.popups.forEach(p => p.element.classList.remove('visible'));
+        ad.element.classList.add('visible');
+        
+        this.startProgressBar(ad.progress, ad.duration);
+        
+        setTimeout(() => {
+          ad.element.classList.remove('visible');
+          this.isAdShowing = false;
+          
+          if (index < this.popups.length - 1) {
+            setTimeout(() => {
+              this.currentAdIndex++;
+              this.showAd(this.currentAdIndex);
+            }, CONFIG.ads.pauseBetweenAds * 1000);
+          } else {
+            setTimeout(() => {
+              this.currentAdIndex = 0;
+              this.showAd(this.currentAdIndex);
+            }, CONFIG.ads.cycleInterval * 60 * 1000);
+          }
+        }, ad.duration * 1000);
+      }
+
+      startProgressBar(progressBar, duration) {
+        progressBar.style.transition = 'none';
+        progressBar.style.transform = 'scaleX(0)';
+        void progressBar.offsetWidth;
+        progressBar.style.transition = `transform ${duration}s linear`;
+        progressBar.style.transform = 'scaleX(1)';
+      }
+
+      setupEventListeners() {
+        document.addEventListener('click', (e) => {
+          const button = e.target.closest('.cta-button');
+          if (!button) return;
+          
+          const action = button.dataset.action;
+          const level = button.dataset.level;
+          
+          this.handleButtonClick(action, level);
+        });
+      }
+
+      handleButtonClick(action, level) {
+        switch(action) {
+          case 'subscribe':
+            if (level) {
+              const url = LinkProtector.getSubscriptionLink(level);
+              LinkProtector.openProtectedLink(url);
+            }
+            break;
+            
+          case 'telegram':
+            const telegramUrl = LinkProtector.getTelegramLink();
+            LinkProtector.openProtectedLink(telegramUrl);
+            break;
+        }
+      }
+    }
+
+    // ЗАПУСК ВСЕХ СИСТЕМ
+    document.addEventListener('DOMContentLoaded', () => {
+      // Запуск системы частиц
+      resizeParticlesCanvas();
+      animateParticles();
+      
+      // Запуск оверлея
+      const overlay = new StreamOverlay();
+      overlay.init();
+    });
+
+    // Ресайз для частиц (фиксированный размер для оверлея)
+    window.addEventListener('resize', () => {
+      // Для оверлея фиксированный размер, но можем обновить частицы если нужно
+      resizeParticlesCanvas();
+    });
+  </script>
 </body>
 </html>
